@@ -36,11 +36,34 @@ However, the training of these networks is particularly long, so we have tried r
 
 
 ## Convolutional-Bidirectional LSTM Model
-Then, we started implementing models with bidirectional LSTM layers (128 and 256 units) alternated with one dimensional convolutional layer (256 units). They worked pretty well but still lost some information as you can see in the Figure \ref{fig:Conv_Bid} where autoregression is used: the full amplitude of the signal is not reached by the prediction. Training our model with different values of telescope and window size in input, we obtained very different performances. In particular, too small telescopes tend to give poor results: the model is not able to "follow the periodicity of the signal" in the predictions. In particular, we have noticed that even if we significantly increase the window size, the model still performs poorly if the telescope is less than one season (96 temporal units). 
+Then, we started implementing models with bidirectional LSTM layers (128 and 256 units) alternated with one dimensional convolutional layer (256 units). They worked pretty well but still lost some information as you can see in the Figure 3 where autoregression is used: the full amplitude of the signal is not reached by the prediction. Training our model with different values of telescope and window size in input, we obtained very different performances. In particular, too small telescopes tend to give poor results: the model is not able to "follow the periodicity of the signal" in the predictions. In particular, we have noticed that even if we significantly increase the window size, the model still performs poorly if the telescope is less than one season (96 temporal units)
+    
 
+<p align="center">
+    <img src="./media/sponginess_brutto.png" height="130" alt="constant intervals"/>
+    <p align="center">
+    Figure 3: The prediction points never reach the full amplitude of the *Sponginess* signal.
+        
 Among those we trained, the model that performed best had a window size of 576 and a telescope of 192 (score 5.29). This model covers the whole amplitude of the signal quite well.
 
 To additionally improve the performance of our models, we used \texttt{keras-tuner}, a hyperparameter tuning tool. The method we decided to use was `Hyperband`, as performing a grid or random search would have been too costly. Continuing to use a structure based on bidirectional LSTM layers and convolutional layers, we have implemented a tuning on the number of layers, the number of units per layer and the dropout rate. We tuned some of the models that performed best in the previous step, but none of them showed noteworthy improvements. 
 
 ## Adding helpful features
-To help our models keep track of the periodicity of the signals, we decided to add two signals as input: a sin and a cosine with a frequency of 96 and we also decided to increase the number of LSTM units in our recurring layers. The model we trained with these inputs consists of two bidirectional LSTM layers, each composed by 288 units, followed by a dense layer and in the end three convolutional layers. The input window is 288 samples wide while the telescope is 96. The model [\texttt{Notebook 4}] was able to easily keep track of the periodicity of the signal, making it achieve the best results we obtained during this assignment with a score of 4.00.
+To help our models keep track of the periodicity of the signals, we decided to add two signals as input: a sin and a cosine with a frequency of 96 and we also decided to increase the number of LSTM units in our recurring layers. The model we trained with these inputs consists of two bidirectional LSTM layers, each composed by 288 units, followed by a dense layer and in the end three convolutional layers. The input window is 288 samples wide while the telescope is 96. The model [`Notebook 4`] was able to easily keep track of the periodicity of the signal, making it achieve the best results we obtained during this assignment with a score of 4.00.
+        
+## Transformer
+After extensive testing with LSTMs, we decided to try using transformers, which would allow us to significantly speed up our training parallelizing the task. The model was composed of 2 transformer blocks, a dense layer and finally a convolutional layer. The transformer block contained a Multi Head Attention layer with 2 heads of size 64 and 2 layers of 1D convolution. With a window size of 480 and a telescope of 24 the model obtained an mse value of 0.058 on the 24-size test set, but by prolonging the prediction on a greater interval through autoregression, it can be seen that the model is able to learn the periodicity of the signals but not well its amplitude [`Notebook 5`].
+
+
+## Overlapping autoregression
+To better exploit the characteristics of memory based networks, and more specifically make the state of the network at prediction time more meaningful, we implemented two different functions to make better predictions [`Notebook 6`].
+
+The first autoreg$\_$prediction makes a prediction using only the outputs of the last elements of a batch. Hence, the first batch considered is the one ending on the last sample of the dataset. The prediction on the last element of the same is appended to the dataset and a new batch, ending on the new last sample of the dataset is drawn (Figure \ref{fig:pred1}). This process is repeated until the prediction reaches the target length.
+
+The second overlapping$\_$autoreg$\_$prediction uses batches in the same manner as the previous one but, instead of trusting the prediction made immediately, multiple predictions on the same elements are made by shifting the end of the batch considered by 1. This results in having, for each value we want to predict, as many predictions as the number of outputs of the considered model. The value to append to the dataset is chosen as the median of all the predictions, making it more robust with respect to outliers. The process is shown in Figure 4. Unfortunately, although this method gave slightly better predictions, we were not able to use it in the assignment as it took to much time and caused a timeout to be issued from the server.
+
+
+<p align="center">
+    <img src="./media/4.png" height="130" alt="constant intervals"/>
+    <p align="center">
+    Figure 4: Autoreg$\_$prediction makes a prediction using only last window-size outputs.
