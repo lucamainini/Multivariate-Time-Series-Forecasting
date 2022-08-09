@@ -42,7 +42,7 @@ Then, we started implementing models with bidirectional LSTM layers (128 and 256
 <p align="center">
     <img src="./media/sponginess_brutto.png" height="130" alt="constant intervals"/>
     <p align="center">
-    Figure 3: The prediction points never reach the full amplitude of the *Sponginess* signal.
+    Figure 3: The prediction points never reach the full amplitude of the Sponginess signal.
         
 Among those we trained, the model that performed best had a window size of 576 and a telescope of 192 (score 5.29). This model covers the whole amplitude of the signal quite well.
 
@@ -58,12 +58,34 @@ After extensive testing with LSTMs, we decided to try using transformers, which 
 ## Overlapping autoregression
 To better exploit the characteristics of memory based networks, and more specifically make the state of the network at prediction time more meaningful, we implemented two different functions to make better predictions [`Notebook 6`].
 
-The first autoreg$\_$prediction makes a prediction using only the outputs of the last elements of a batch. Hence, the first batch considered is the one ending on the last sample of the dataset. The prediction on the last element of the same is appended to the dataset and a new batch, ending on the new last sample of the dataset is drawn (Figure \ref{fig:pred1}). This process is repeated until the prediction reaches the target length.
+The first autoreg$\_$prediction makes a prediction using only the outputs of the last elements of a batch. Hence, the first batch considered is the one ending on the last sample of the dataset. The prediction on the last element of the same is appended to the dataset and a new batch, ending on the new last sample of the dataset is drawn (Figure 4). This process is repeated until the prediction reaches the target length.
 
-The second overlapping$\_$autoreg$\_$prediction uses batches in the same manner as the previous one but, instead of trusting the prediction made immediately, multiple predictions on the same elements are made by shifting the end of the batch considered by 1. This results in having, for each value we want to predict, as many predictions as the number of outputs of the considered model. The value to append to the dataset is chosen as the median of all the predictions, making it more robust with respect to outliers. The process is shown in Figure 4. Unfortunately, although this method gave slightly better predictions, we were not able to use it in the assignment as it took to much time and caused a timeout to be issued from the server.
+<p align="center">
+    <img src="./media/fig4.png" height="200" alt="constant intervals"/>
+    <p align="center">
+    Figure 4: Autoreg_prediction makes a prediction using only last window-size outputs.
+
+The second overlapping$\_$autoreg$\_$prediction uses batches in the same manner as the previous one but, instead of trusting the prediction made immediately, multiple predictions on the same elements are made by shifting the end of the batch considered by 1. This results in having, for each value we want to predict, as many predictions as the number of outputs of the considered model. The value to append to the dataset is chosen as the median of all the predictions, making it more robust with respect to outliers. The process is shown in Figure 5. Unfortunately, although this method gave slightly better predictions, we were not able to use it in the assignment as it took to much time and caused a timeout to be issued from the server.
 
 
 <p align="center">
-    <img src="./media/4.png" height="130" alt="constant intervals"/>
+    <img src="./media/fig5.png" height="200" alt="constant intervals"/>
     <p align="center">
-    Figure 4: Autoreg$\_$prediction makes a prediction using only last window-size outputs.
+    Figure 5: overlapping_autoreg_prediction considers as prediction the median of multiple predictions.
+    
+## Conclusion
+In our work, we tried several variations of LSTM-based or GRU-based seq-to-seq, we added some convolutional layers, we changed approach using Transformer, finally we implemented different autoregression predictors.
+
+The hyperparameters we found to be the most impactful were: the window size, the telescope and the number of units in our recurring layers. The best results were achieved increasing these factors, however, the training time of these models with many units proved to be particularly long.
+
+The models which best performed were the bidirectional LSTM with additional feature having a score of 4.00 and the one with GRU layers giving a score of 4.35. The different predictions are visible in the Figure 6.
+Further experimentation tuning the hyperparameters of our models could still improve the performance of seq-to-seq models with memory and we may get better results by rebuilding the corrupted intervals of our signals. 
+
+<p align="center">
+    <img src="./media/comparison_models.png"  alt="constant intervals"/>
+    <p align="center">
+    Figure 6: Comparison of the various predictions on the test set based on different models.
+
+
+## Acknowledgement
+This project was realised together with `Giovanni Dragonetti` and `Erica Espinosa`. It was one of the challanges of the [`Artificial Neural Networks and Deep Learning`](http://chrome.ws.dei.polimi.it/index.php?title=Artificial_Neural_Networks_and_Deep_Learning) course held in the winter of 2021 at `Politecnico di Milano`.
