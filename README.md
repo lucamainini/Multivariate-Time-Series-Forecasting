@@ -1,5 +1,5 @@
 # Multivariate-Time-Series-Forecasting
-> using Artificial Neural Networks
+> through deep learning models with different structures based on LSTM, GRU, and Transformers
 
 ## 1. Introduction
 The problem we had to face is time series forecasting for multinomial data. To address this task, we used deep learning models with different structures based on LSTM and GRU, and Transformers. 
